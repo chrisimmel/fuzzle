@@ -105,7 +105,7 @@ void mousePressed() {
 }
 
 /**
- * The mouse was released.
+ * Handles a mouse release event.
  */
 void mouseReleased() {
   board.stopInteraction();
@@ -113,7 +113,7 @@ void mouseReleased() {
 }
 
 /**
- * Handles a mouse drag.
+ * Handles a mouse drag event.
  */
 void mouseDragged() {
   if (colorPicker.interacting) {
@@ -583,6 +583,9 @@ class TrigridBoard {
   }
 }
 
+/**
+ * A simple color palette.
+ */
 class Palette {
   /*
    * The background color.
@@ -635,7 +638,6 @@ class Palette {
  * click and drag to modify the color palette.
  */
 class ColorPicker {
-
   /**
    * Color picker height, in pixels.
    */
@@ -735,19 +737,21 @@ class VideoCaptureButton {
   }
 
   void mousePressed() {
-    videoCapture.togglePlay();
+    videoCapture.toggleCapture();
   }
 
   void draw() {
     fill(palette.gridColor);
     stroke(palette.gridColor);
     final int barWidth = BUTTON_WIDTH / 5;
-    if (videoCapture.playing) {
+    if (videoCapture.capturing) {
+      // Draw a pause button.
       rect(barWidth, height - (BUTTON_HEIGHT - barWidth),
            barWidth, BUTTON_HEIGHT - (2 * barWidth));
       rect(3 * barWidth, height - (BUTTON_HEIGHT - barWidth),
            barWidth, BUTTON_HEIGHT - (2 * barWidth));
     } else {
+      // Draw a play button.
       final int playSide = BUTTON_HEIGHT - 2 * barWidth;
       triangle(barWidth, height - (BUTTON_HEIGHT - barWidth),
                BUTTON_WIDTH - barWidth, height - (BUTTON_HEIGHT / 2),
@@ -773,10 +777,20 @@ class VideoCapture {
    */
   Object videoSource = null;
 
+  /**
+   * The frame interval, in milliseconds.
+   */
   final int frameInterval = 100;
 
-  boolean playing = false;
+  /**
+   * Whether capture is in progress.
+   */
+  boolean capturing = false;
 
+  /**
+   * Constructs a new VideoCapture object.  This class is expected to be a
+   * singleton.
+   */
   VideoCapture() {
   }
 
@@ -817,15 +831,15 @@ class VideoCapture {
      }
   }
 
-  void togglePlay() {
-    if (playing) {
-      pause();
+  void toggleCapture() {
+    if (capturing) {
+      stopCapture();
     } else {
-      play();
+      startCapture();
     }
   }
 
-  void play() {
+  void startCapture() {
     if (videoSource == null) {
       initVideo();
     }
@@ -834,9 +848,9 @@ class VideoCapture {
     }
   }
 
-  void pause() {
+  void stopCapture() {
     videoSource.pause();
-    playing = false;
+    capturing = false;
     redraw();
   }
 
@@ -846,11 +860,11 @@ class VideoCapture {
     videoSource.onplay = function() {
       setTimeout(captureFrame, delay);
     }
-    playing = true;
+    capturing = true;
   }
 
   void captureFrame() {
-    if (playing) {
+    if (capturing) {
       setBoardStateFromElement(videoSource);
       redraw();
       setTimeout(captureFrame, frameInterval);
@@ -858,7 +872,7 @@ class VideoCapture {
   }
 
   /**
-   * Copies the state from the given element, which must be an HTMLImageElement,
+   * Copies the board state from the given element, which must be an HTMLImageElement,
    * an HTMLVideoElement, an HTMLCanvasElement or an ImageBitmap.
    */
   void setBoardStateFromElement(Object element) {
