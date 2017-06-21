@@ -49,9 +49,9 @@ final float SQRT3_RECIP = 1.0 / SQRT3;
 final float TR_WIDTH = TR_SIDE * SQRT3 / 2.0;
 
 /**
- * A singleton Board object.
+ * A singleton TrigridBoard object.
  */
-final Board board;
+final TrigridBoard board;
 
 /**
  * A singleton Palette object.
