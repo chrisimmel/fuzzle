@@ -1,3 +1,28 @@
+/*
+ * This file implements a simple visual editor based on a grid of equilateral
+ * triangular tiles.  Clicking on a tile cycles its state between 4 values.
+ * Tiles are colored according to their state.  Tiles can also be modified by
+ * clicking and dragging, enabling basic drawing.
+ *
+ * A color picker at the bottom of the display area allows the user to choose
+ * a color on which the color palette is based.
+ *
+ * A Clear button in the lower right allows the state of all tiles to be cleared.
+ *
+ * If the program can gain access to a webcam, a Play/Pause button in the lower
+ * left starts/pauses playback of video from the webcam on the triangular grid.
+ * For security reasons, this only works across an HTTPS connection or when
+ * served from localhost.  It also does not currently work in Safari or Internet
+ * Explorer.
+ *
+ * A number of classes that would normally be broken apart into individual files
+ * are combined here into a single file due to constraints of the assignment for
+ * which this program was written.
+ *
+ *
+ * Copyright 2017 Chris Immel
+ */
+
 /**
  * The length of a side of a triangular tile.
  */
@@ -303,6 +328,7 @@ class Tile {
     }
   }
 }
+
 
 /**
  * A board tesselated by triangular tiles.
@@ -611,6 +637,7 @@ class TrigridBoard {
   }
 }
 
+
 /**
  * A simple color palette.
  */
@@ -860,6 +887,7 @@ class ClearButton extends Button {
   }
 }
 
+
 /**
  * Enables copying an image from the webcam (if any) to the trigrid board.
  * Failing to gain access to the camera (e.g., for security reasons, technical
@@ -869,9 +897,6 @@ class ClearButton extends Button {
  * Note that getUserMedia() will fail on an HTTP connection other than to
  * localhost.  For video capture to work, this file must be served either via
  * HTTPS or from localhost.
- *
- * A cute bug:  When the webcam can't be accessed, this generates semirandom
- * feedback patterns across the board state.
  */
 class VideoCapture {
   /*
