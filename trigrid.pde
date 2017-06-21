@@ -725,6 +725,9 @@ class ColorPicker extends Button {
     super(0, height - TR_SIDE, width, TR_SIDE);
   }
 
+  /**
+   * Calculates a hue based on an X offset.
+   */
   int hueFromX(int x) {
     return ((mouseX - left) * 256) / buttonWidth();
   }
