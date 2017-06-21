@@ -770,6 +770,9 @@ class VideoCaptureButton {
  * Note that getUserMedia() will fail on an HTTP connection other than to
  * localhost.  For video capture to work, this file must be served either via
  * HTTPS or from localhost.
+ *
+ * A cute bug:  When the webcam can't be accessed, this generates semirandom
+ * feedback patterns across the board state.
  */
 class VideoCapture {
   /*
@@ -788,6 +791,11 @@ class VideoCapture {
   boolean capturing = false;
 
   /**
+   * True if there has been an error setting up capture.
+   */
+  boolean captureError = false;
+
+  /**
    * Constructs a new VideoCapture object.  This class is expected to be a
    * singleton.
    */
@@ -798,7 +806,7 @@ class VideoCapture {
    * Sets up access to the video camera, and grabs an image from it.
    */
   void initVideo() {
-    if (online) {
+    if (online && !captureError) {
       videoSource = document.createElement("video");
       videoSource.setAttribute("style", "display:none");
       videoSource.setAttribute("id", "videoOutput");
@@ -809,28 +817,45 @@ class VideoCapture {
         document.body.appendChild(videoSource);
       }
 
-      // Request the camera.
-       navigator.getUserMedia(
-         {
-           video: true
-         },
-         // Success Callback
-         function(stream){
+      navigator.getMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
-           // Create an object URL for the video stream and
-           // set it as src of our HTLM video element.
-           videoSource.src = window.URL.createObjectURL(stream);
+      if (navigator.getMedia) {
+        // Request the camera.
+        navigator.getMedia(
+           {
+             video: true
+           },
+           // Success Callback
+           function(stream) {
+             // Chrome needs to convert the stream to an object URL, but Firefox's stream already is one.
+             if (window.URL) {
+               // Create an object URL for the video stream and
+               // set it as src of our HTLM video element.
+               videoSource.src = window.URL.createObjectURL(stream);
+             } else if (window.webkitURL) {
+               videoSource.src = window.webkitURL.createObjectURL(stream);
+             } else {
+               videoSource.src = stream;
+             }
 
-           startStream(100);
-         },
-         // Error Callback
-         function(err){
-           console.log("There was an error with accessing the camera stream: " + err.name, err);
-         }
-       );
-     }
+             startStream(300);
+           },
+           // Error Callback
+           function(err){
+             console.log("There was an error with accessing the camera stream: " + err.name, err);
+             captureError = true;
+           }
+         );
+       } else {
+         console.log("The browser doesn't support getUserMedia.");
+         captureError = true;
+       }
+    }
   }
 
+  /**
+   * Toggles video capture.
+   */
   void toggleCapture() {
     if (capturing) {
       stopCapture();
@@ -839,6 +864,9 @@ class VideoCapture {
     }
   }
 
+  /**
+   * Starts video capture.
+   */
   void startCapture() {
     if (videoSource == null) {
       initVideo();
@@ -848,21 +876,34 @@ class VideoCapture {
     }
   }
 
+  /**
+   * Stops video capture.
+   */
   void stopCapture() {
-    videoSource.pause();
+    if (videoSource != null) {
+      videoSource.pause();
+    }
     capturing = false;
     redraw();
   }
 
+  /**
+   * Starts the video stream.
+   */
   void startStream(int delay) {
-    // Play the video element to start the stream.
-    videoSource.play();
-    videoSource.onplay = function() {
-      setTimeout(captureFrame, delay);
+    if (!captureError) {
+      // Play the video element to start the stream.
+      videoSource.play();
+      videoSource.onplay = function() {
+        setTimeout(captureFrame, delay);
+      }
+      capturing = true;
     }
-    capturing = true;
   }
 
+  /**
+   * Captures a frame from the video stream and copies it to the board state.
+   */
   void captureFrame() {
     if (capturing) {
       setBoardStateFromElement(videoSource);
