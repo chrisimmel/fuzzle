@@ -660,89 +660,6 @@ class Palette {
   }
 }
 
-
-/**
- * A color picker, drawn across the bottom of the display area.  The user can
- * click and drag to modify the color palette.
- */
-class ColorPicker {
-  /**
-   * Color picker height, in pixels.
-   */
-  final int HEIGHT = TR_SIDE;
-
-  /**
-   * Half the width of the color picker caret.
-   */
-  final int CARET_HALF_WIDTH = 4;
-
-  /**
-   * Whether a mouse action is in progress to select colors.
-   */
-  boolean interacting = false;
-
-  ColorPicker() {
-  }
-
-  /**
-   * Determines whether the mouse is over the color picker.
-   */
-  boolean isMouseOver() {
-    return mouseY > height - HEIGHT;
-  }
-
-  /**
-   * Handles a mouse press by beginning an interaction and updating the colors.
-   */
-  void mousePressed() {
-    final int hue = (mouseX * 256) / width;
-    palette.update(hue);
-    interacting = true;
-    redraw();
-  }
-
-  /**
-   * Handles a mouse drag by updating the colors.
-   */
-  void mouseDragged() {
-    final int hue = (mouseX * 256) / width;
-    palette.update(hue);
-    redraw();
-  }
-
-  /**
-   * Stops the interaction in progress, if any.
-   */
-  void stopInteraction() {
-    interacting = false;
-  }
-
-  /**
-   * Draws the color picker.
-   */
-  void draw() {
-    final int swatchTop = height - HEIGHT;
-    final float swatchWidth = (float)width / 256.0;
-
-    // Draw the color palette.
-    for (int h = 0; h < 256; h++) {
-      final float swatchLeft = swatchWidth * h;
-      final color c = color(h, 120, 216);
-      stroke(c);
-      fill(c);
-      rect(swatchLeft, swatchTop, swatchWidth, HEIGHT);
-    }
-
-    // Draw a caret indicating the selected base hue.
-    final int hueBase = hue(palette.getColor(1));
-    final int xHue = (hueBase * width) / 256;
-    for (int x = xHue - CARET_HALF_WIDTH; x < xHue + CARET_HALF_WIDTH; x++) {
-      stroke(0, 0, 64, (CARET_HALF_WIDTH - abs(xHue - x)) * 128 / CARET_HALF_WIDTH);
-      line(x, swatchTop, x, height);
-    }
-  }
-}
-
 /**
  * An abstract button class.
  */
@@ -787,6 +704,82 @@ class Button {
   void draw() {
   }
 }
+
+
+/**
+ * A color picker, drawn across the bottom of the display area.  The user can
+ * click and drag to modify the color palette.
+ */
+class ColorPicker extends Button {
+  /**
+   * Half the width of the color picker caret.
+   */
+  final int CARET_HALF_WIDTH = 4;
+
+  /**
+   * Whether a mouse action is in progress to select colors.
+   */
+  boolean interacting = false;
+
+  ColorPicker() {
+    super(0, height - TR_SIDE, width, TR_SIDE);
+  }
+
+  int hueFromX(int x) {
+    return ((mouseX - left) * 256) / buttonWidth();
+  }
+
+  /**
+   * Handles a mouse press by beginning an interaction and updating the colors.
+   */
+  void mousePressed() {
+    palette.update(hueFromX(mouseX));
+    interacting = true;
+    redraw();
+  }
+
+  /**
+   * Handles a mouse drag by updating the colors.
+   */
+  void mouseDragged() {
+    palette.update(hueFromX(mouseX));
+    redraw();
+  }
+
+  /**
+   * Stops the interaction in progress, if any.
+   */
+  void stopInteraction() {
+    interacting = false;
+  }
+
+  /**
+   * Draws the color picker.
+   */
+  void draw() {
+    final int btnWidth = buttonWidth();
+    final int btnHeight = buttonHeight();
+    final float swatchWidth = (float)btnWidth / 256.0;
+
+    // Draw the color palette.
+    for (int h = 0; h < 256; h++) {
+      final float swatchLeft = swatchWidth * h;
+      final color c = color(h, 120, 216);
+      stroke(c);
+      fill(c);
+      rect(swatchLeft, top, swatchWidth, btnHeight);
+    }
+
+    // Draw a caret indicating the selected base hue.
+    final int hueBase = hue(palette.getColor(1));
+    final int xHue = (hueBase * btnWidth) / 256;
+    for (int x = xHue - CARET_HALF_WIDTH; x < xHue + CARET_HALF_WIDTH; x++) {
+      stroke(0, 0, 64, (CARET_HALF_WIDTH - abs(xHue - x)) * 128 / CARET_HALF_WIDTH);
+      line(x, top, x, bottom);
+    }
+  }
+}
+
 
 /**
  * A button to start or stop video capture.
