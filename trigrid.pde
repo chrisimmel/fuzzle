@@ -39,14 +39,19 @@ final Palette palette;
 final VideoCapture videoCapture;
 
 /**
- * A singleton VideoCaptureButton object.
- */
- final VideoCaptureButton videoCaptureButton;
-
-/**
  * A singleton ColorPicker object.
  */
 final ColorPicker colorPicker;
+
+/**
+ * A singleton VideoCaptureButton object.
+ */
+final VideoCaptureButton videoCaptureButton;
+
+/**
+ * A singleton ClearButton object.
+ */
+final ClearButton clearButton;
 
 
 /**
@@ -73,6 +78,7 @@ void setup() {
   colorPicker = new ColorPicker();
   videoCapture = new VideoCapture();
   videoCaptureButton = new VideoCaptureButton();
+  clearButton = new ClearButton();
 
   background(palette.backgroundColor);
 
@@ -87,6 +93,7 @@ void draw() {
   board.draw();
   colorPicker.draw();
   videoCaptureButton.draw();
+  clearButton.draw();
 }
 
 /**
@@ -95,11 +102,11 @@ void draw() {
 void mousePressed() {
   if (videoCaptureButton.isMouseOver()) {
     videoCaptureButton.mousePressed();
-  }
-  else if (colorPicker.isMouseOver()) {
+  } else if (clearButton.isMouseOver()) {
+    clearButton.mousePressed();
+  } else if (colorPicker.isMouseOver()) {
     colorPicker.mousePressed();
-  }
-  else {
+  } else {
     board.mousePressed();
   }
 }
@@ -199,11 +206,18 @@ class Tile {
   }
 
   /**
-   * Increments the state of the tile.  This is the only method that can modify
+   * Increments the state of the tile.
    * a tile.
    */
   void incState() {
     state = (state + 1) % 4;
+  }
+
+  /**
+   * Resets the state to 0.
+   */
+  void reset() {
+    state = 0;
   }
 
   /**
@@ -370,7 +384,7 @@ class TrigridBoard {
     // Finally, draw the colored tiles, overwriting shared borders with earlier tiles.
     for (int col = 0; col < numCols; col++) {
       for (int row = 0; row < numRows; row++) {
-        Tile tile = tiles[col][row];
+        final Tile tile = tiles[col][row];
         if (tile.state > 0) {
           tile.draw();
         }
@@ -382,10 +396,10 @@ class TrigridBoard {
    * Draws a single grid line connecting a given pair of column/row points.
    */
   void drawGridLine(int c0, int r0, int c1, int r1) {
-    int x0 = (int)(c0 * TR_WIDTH);
-    int y0 = r0 * TR_HALF_SIDE;
-    int x1 = (int)(c1 * TR_WIDTH);
-    int y1 = r1 * TR_HALF_SIDE;
+    final int x0 = (int)(c0 * TR_WIDTH);
+    final int y0 = r0 * TR_HALF_SIDE;
+    final int x1 = (int)(c1 * TR_WIDTH);
+    final int y1 = r1 * TR_HALF_SIDE;
     line(x0, y0, x1, y1);
   }
 
@@ -455,6 +469,20 @@ class TrigridBoard {
         c1 += 2;
       }
     }
+  }
+
+  /**
+   * Clears the board state.
+   */
+  void clear() {
+    for (int col = 0; col < numCols; col++) {
+      for (int row = 0; row < numRows; row++) {
+        final Tile tile = tiles[col][row];
+        tile.reset();
+      }
+    }
+
+    redraw();
   }
 
   /**
@@ -725,15 +753,24 @@ class VideoCaptureButton {
   final int BUTTON_HEIGHT = TR_SIDE;
   final int BUTTON_WIDTH = TR_WIDTH;
 
+  int left;
+  int top;
+  int right;
+  int bottom;
+
   VideoCaptureButton() {
+    left = 0;
+    top = height - BUTTON_HEIGHT;
+    right = left + BUTTON_WIDTH;
+    bottom = top + BUTTON_HEIGHT;
   }
 
   /**
-   * Determines whether the mouse is over the camera button.
-   */
+  * Determines whether the mouse is over the button.
+  */
   boolean isMouseOver() {
-    return mouseY > height - BUTTON_HEIGHT &&
-           mouseX < BUTTON_WIDTH;
+    return mouseY > top && mouseY < bottom &&
+           mouseX > left && mouseX < right;
   }
 
   void mousePressed() {
@@ -760,6 +797,64 @@ class VideoCaptureButton {
   }
 }
 
+
+/**
+ * A button to clear the board.
+ */
+class ClearButton {
+  /**
+   * Button height and width.
+   */
+  final int BUTTON_HEIGHT = TR_SIDE;
+  final int BUTTON_WIDTH = TR_SIDE;
+
+  int left;
+  int top;
+  int right;
+  int bottom;
+
+  /**
+   * Constructs a ClearButton.
+   */
+  ClearButton() {
+    left = width - BUTTON_WIDTH;
+    top = height - BUTTON_HEIGHT;
+    right = left + BUTTON_WIDTH;
+    bottom = top + BUTTON_HEIGHT;
+  }
+
+  /**
+   * Determines whether the mouse is over the button.
+   */
+  boolean isMouseOver() {
+    return mouseY > top && mouseY < bottom &&
+           mouseX > left && mouseX < right;
+  }
+
+  /**
+   * Handles a mouse pressed event by clearing the board state.
+   */
+  void mousePressed() {
+    board.clear();
+  }
+
+  void draw() {
+    final int barWidth = BUTTON_WIDTH / 5;
+
+    fill(palette.gridColor);
+    stroke(palette.gridColor);
+
+    // Draw an X.
+    quad(left, top + barWidth,
+         left + barWidth, top + barWidth,
+         right - barWidth, bottom - barWidth,
+         right - 2 * barWidth, bottom - barWidth);
+    quad(right - 2 * barWidth, top + barWidth,
+         right - barWidth, top + barWidth,
+         left + barWidth, bottom - barWidth,
+         left, bottom - barWidth);
+  }
+}
 
 /**
  * Enables copying an image from the webcam (if any) to the trigrid board.
