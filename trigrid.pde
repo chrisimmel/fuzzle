@@ -781,18 +781,20 @@ class VideoCaptureButton {
     fill(palette.gridColor);
     stroke(palette.gridColor);
     final int barWidth = BUTTON_WIDTH / 5;
+    final int barHeight = BUTTON_HEIGHT - (2 * barWidth);
+
     if (videoCapture.capturing) {
       // Draw a pause button.
-      rect(barWidth, height - (BUTTON_HEIGHT - barWidth),
-           barWidth, BUTTON_HEIGHT - (2 * barWidth));
-      rect(3 * barWidth, height - (BUTTON_HEIGHT - barWidth),
-           barWidth, BUTTON_HEIGHT - (2 * barWidth));
+      rect(left + barWidth, top + barWidth,
+           barWidth, barHeight);
+      rect(left + 3 * barWidth, top + barWidth,
+           barWidth, barHeight);
     } else {
       // Draw a play button.
       final int playSide = BUTTON_HEIGHT - 2 * barWidth;
-      triangle(barWidth, height - (BUTTON_HEIGHT - barWidth),
-               BUTTON_WIDTH - barWidth, height - (BUTTON_HEIGHT / 2),
-               barWidth, height - barWidth);
+      triangle(left + barWidth, top + barWidth,
+               right - barWidth, top + (BUTTON_HEIGHT / 2),
+               left + barWidth, bottom - barWidth);
     }
   }
 }
