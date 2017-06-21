@@ -49,9 +49,9 @@ final float SQRT3_RECIP = 1.0 / SQRT3;
 final float TR_WIDTH = TR_SIDE * SQRT3 / 2.0;
 
 /**
- * A singleton TrigridBoard object.
+ * A singleton Board object.
  */
-final TrigridBoard board;
+final Board board;
 
 /**
  * A singleton Palette object.
@@ -95,9 +95,9 @@ void setup() {
   // Create a palette with a random base color.
   palette = new Palette(random(256));
 
-  // Create the trigrid board, filling the display area (minus the row of
+  // Create the board, filling the display area (minus the row of
   // interactive elements at the bottom).
-  board = new TrigridBoard(ceil(width / TR_WIDTH), ceil(2 * height / TR_SIDE));
+  board = new Board(ceil(width / TR_WIDTH), ceil(2 * height / TR_SIDE));
 
   // Create other interactive elements.
   colorPicker = new ColorPicker();
@@ -333,7 +333,7 @@ class Tile {
 /**
  * A board tesselated by triangular tiles.
  */
-class TrigridBoard {
+class Board {
   /**
    * The tiles covering the display area, as a (column, row) array.
    */
@@ -360,9 +360,9 @@ class TrigridBoard {
   boolean interacting = false;
 
   /**
-   * Constructs a new TrigridBoard of the given dimensions.
+   * Constructs a new Board of the given dimensions.
    */
-  TrigridBoard(int numCols, int numRows) {
+  Board(int numCols, int numRows) {
     this.numCols = numCols;
     this.numRows = numRows;
 
@@ -889,10 +889,10 @@ class ClearButton extends Button {
 
 
 /**
- * Enables copying an image from the webcam (if any) to the trigrid board.
+ * Enables copying an image from the webcam (if any) to the board.
  * Failing to gain access to the camera (e.g., for security reasons, technical
  * reasons, or because the user refuses) produces a harmless, silent failure,
- * and the trigrid remains blank.
+ * and the board remains blank.
  *
  * Note that getUserMedia() will fail on an HTTP connection other than to
  * localhost.  For video capture to work, this file must be served either via
