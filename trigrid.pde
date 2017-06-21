@@ -744,25 +744,27 @@ class ColorPicker {
 }
 
 /**
- * A button to start or stop video capture.
+ * An abstract button class.
  */
-class VideoCaptureButton {
-  /**
-   * Capture button height and width.
-   */
-  final int BUTTON_HEIGHT = TR_SIDE;
-  final int BUTTON_WIDTH = TR_WIDTH;
-
+class Button {
   int left;
   int top;
   int right;
   int bottom;
 
-  VideoCaptureButton() {
-    left = 0;
-    top = height - BUTTON_HEIGHT;
-    right = left + BUTTON_WIDTH;
-    bottom = top + BUTTON_HEIGHT;
+  Button(int left, int top, int width, int height) {
+    this.left = left;
+    this.top = top;
+    this.right = left + width;
+    this.bottom = top + height;
+  }
+
+  int buttonWidth() {
+    return right - left;
+  }
+
+  int buttonHeight() {
+    return bottom - top;
   }
 
   /**
@@ -773,6 +775,31 @@ class VideoCaptureButton {
            mouseX > left && mouseX < right;
   }
 
+  /**
+   * Handles a mouse pressed event.  Subclass must override.
+   */
+  void mousePressed() {
+  }
+
+  /**
+   * Draw the button.  Subclass must override.
+   */
+  void draw() {
+  }
+}
+
+/**
+ * A button to start or stop video capture.
+ */
+class VideoCaptureButton extends Button {
+
+  VideoCaptureButton() {
+    super(0, height - TR_SIDE, TR_WIDTH, TR_SIDE);
+  }
+
+  /**
+   * Toggles video capture.
+   */
   void mousePressed() {
     videoCapture.toggleCapture();
   }
@@ -780,8 +807,10 @@ class VideoCaptureButton {
   void draw() {
     fill(palette.gridColor);
     stroke(palette.gridColor);
-    final int barWidth = BUTTON_WIDTH / 5;
-    final int barHeight = BUTTON_HEIGHT - (2 * barWidth);
+    final int btnWidth = buttonWidth();
+    final int btnHeight = buttonHeight();
+    final int barWidth = btnWidth / 5;
+    final int barHeight = btnHeight - (2 * barWidth);
 
     if (videoCapture.capturing) {
       // Draw a pause button.
@@ -791,9 +820,9 @@ class VideoCaptureButton {
            barWidth, barHeight);
     } else {
       // Draw a play button.
-      final int playSide = BUTTON_HEIGHT - 2 * barWidth;
+      final int playSide = btnHeight - 2 * barWidth;
       triangle(left + barWidth, top + barWidth,
-               right - barWidth, top + (BUTTON_HEIGHT / 2),
+               right - barWidth, top + (btnHeight / 2),
                left + barWidth, bottom - barWidth);
     }
   }
@@ -803,45 +832,22 @@ class VideoCaptureButton {
 /**
  * A button to clear the board.
  */
-class ClearButton {
-  /**
-   * Button height and width.
-   */
-  final int BUTTON_HEIGHT = TR_SIDE;
-  final int BUTTON_WIDTH = TR_SIDE;
+class ClearButton extends Button {
 
-  int left;
-  int top;
-  int right;
-  int bottom;
-
-  /**
-   * Constructs a ClearButton.
-   */
   ClearButton() {
-    left = width - BUTTON_WIDTH;
-    top = height - BUTTON_HEIGHT;
-    right = left + BUTTON_WIDTH;
-    bottom = top + BUTTON_HEIGHT;
+    super(width - TR_SIDE, height - TR_SIDE,
+          TR_SIDE, TR_SIDE);
   }
 
   /**
-   * Determines whether the mouse is over the button.
-   */
-  boolean isMouseOver() {
-    return mouseY > top && mouseY < bottom &&
-           mouseX > left && mouseX < right;
-  }
-
-  /**
-   * Handles a mouse pressed event by clearing the board state.
+   * Clears the board state.
    */
   void mousePressed() {
     board.clear();
   }
 
   void draw() {
-    final int barWidth = BUTTON_WIDTH / 5;
+    final int barWidth = buttonWidth() / 5;
 
     fill(palette.gridColor);
     stroke(palette.gridColor);
