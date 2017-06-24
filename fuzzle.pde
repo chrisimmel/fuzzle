@@ -1,8 +1,8 @@
 /*
  * This file implements a simple visual editor based on a grid of equilateral
- * triangular tiles.  Clicking on a tile cycles its state between 4 values.
- * Tiles are colored according to their state.  Tiles can also be modified by
- * clicking and dragging, enabling basic drawing.
+ * triangular tiles.  Tiles are colored according to their state.  Clicking on a
+ * tile cycles its state between the number of available colors in the palette.
+ * Tiles can also be modified by clicking and dragging.
  *
  * A color picker at the bottom of the display area allows the user to choose
  * a color on which the color palette is based.
@@ -93,7 +93,7 @@ void setup() {
   }
 
   // Create a palette with a random base color.
-  palette = new Palette(random(256));
+  palette = new Palette(random(256), 4);
 
   // Create the board, filling the display area (minus the row of
   // interactive elements at the bottom).
@@ -235,7 +235,7 @@ class Tile {
    * a tile.
    */
   void incState() {
-    state = (state + 1) % 4;
+    state = (state + 1) % palette.numColors;
   }
 
   /**
@@ -243,6 +243,7 @@ class Tile {
    */
   void reset() {
     state = 0;
+    clr = null;
   }
 
   /**
@@ -385,7 +386,7 @@ class Board {
   /**
    * Draws the board.
    */
-  vod draw() {
+  void draw() {
     // First, clear the background (since not running an animation loop and not
     // redrawing empty tiles).
     stroke(palette.backgroundColor);
@@ -631,7 +632,7 @@ class Board {
         final float normBrightness = invertImage ?
           (maxBrightness - brightnesses[col][row]) / normalizer :
           (brightnesses[col][row] - minBrightness) / normalizer;  // Ranges 0-1.
-        tile.state = (int)(3 * normBrightness);
+        tile.state = (int)((palette.numColors - 1) * normBrightness);
       }
     }
   }
@@ -642,6 +643,8 @@ class Board {
  * A simple color palette.
  */
 class Palette {
+  int numColors = 4;
+
   /*
    * The background color.
    */
@@ -657,17 +660,17 @@ class Palette {
    * background color, followed by the 3 non-empty states.  To be filled by
    * update().
    */
-  final color colors[] = {
+  color colors[] = {
      backgroundColor,
      color(0, 0, 0),
      color(0, 0, 0),
      color(0, 0, 0) };
 
   /**
-   * Constructs a Palette based on the given hue.
+   * Constructs a Palette based on the given hue and number of colors.
    */
-  Palette(int baseHue) {
-    update(baseHue);
+  Palette(int baseHue, int numColors) {
+    updateColors(baseHue, numColors);
   }
 
   /**
@@ -678,12 +681,55 @@ class Palette {
   }
 
   /**
+   * Gets the base hue.
+   */
+  color getBaseHue() {
+    return getColor(1);
+  }
+
+  /**
+   * Sets the base hue.
+   */
+  void setBaseHue(int baseHue) {
+    updateColors(baseHue, numColors);
+  }
+
+  /**
+   * Sets the number of colors.
+   */
+  void setNumColors(int numColors) {
+    updateColors(getColor(1), numColors);
+  }
+
+  final int HUE_RANGE = 20;
+  final int SATURATION_RANGE = 40;
+  final int BRIGHTNESS_RANGE = 64;
+
+  /**
    * Updates the palette based on a given base hue.
    */
-  void update(int baseHue) {
-    colors[1] = color(baseHue, 100, 248);
-    colors[2] = color((baseHue + 10) % 256, 120, 216);
-    colors[3] = color((baseHue + 20) % 256, 140, 184);
+  void updateColors(int baseHue, int numColors) {
+    final int endHue = baseHue + HUE_RANGE;  // Let this overflow 256.
+    final int baseSat = 100;
+    final int endSat = baseSat + SATURATION_RANGE;
+    final int baseBright = 248;
+    final int endBright = baseBright - BRIGHTNESS_RANGE;
+
+    this.numColors = numColors;
+    this.colors = new color[numColors];
+
+    color[0] = backgroundColor;
+
+    final float hueStep = (float)(endHue - baseHue) / (float)(numColors - 1);
+    final float satStep = (float)(endSat - baseSat) / (float)(numColors - 1);
+    final float brightStep = (float)(endBright - baseBright) / (float)(numColors - 1);
+
+    for (int i = 1; i < numColors; i++) {
+      this.colors[i] = color(
+        (baseHue + hueStep * i) % 256,
+        baseSat + satStep * i,
+        baseBright + brightStep * i);
+    }
   }
 }
 
@@ -763,7 +809,7 @@ class ColorPicker extends Button {
    * Handles a mouse press by beginning an interaction and updating the colors.
    */
   void mousePressed() {
-    palette.update(hueFromX(mouseX));
+    palette.setBaseHue(hueFromX(mouseX));
     interacting = true;
     redraw();
   }
@@ -772,7 +818,7 @@ class ColorPicker extends Button {
    * Handles a mouse drag by updating the colors.
    */
   void mouseDragged() {
-    palette.update(hueFromX(mouseX));
+    palette.setBaseHue(hueFromX(mouseX));
     redraw();
   }
 
@@ -801,7 +847,7 @@ class ColorPicker extends Button {
     }
 
     // Draw a caret indicating the selected base hue.
-    final int hueBase = hue(palette.getColor(1));
+    final int hueBase = hue(palette.getBaseHue());
     final int xHue = (hueBase * btnWidth) / 256;
     for (int x = xHue - CARET_HALF_WIDTH; x < xHue + CARET_HALF_WIDTH; x++) {
       stroke(0, 0, 64, (CARET_HALF_WIDTH - abs(xHue - x)) * 128 / CARET_HALF_WIDTH);
