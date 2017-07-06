@@ -15,6 +15,9 @@
  * served from localhost.  It also does not currently work in Safari or Internet
  * Explorer.
  *
+ * When video capture is in progress, tile coloration is drawn directly from the
+ * video stream, not from the 3-color palette used when drawing.
+ *
  * A number of classes that would normally be broken apart into individual files
  * are combined here into a single file due to constraints of the assignment for
  * which this program was written.
@@ -162,13 +165,17 @@ void mouseDragged() {
  * vertical columns, with a flat side to the left or right.  This enables a
  * simple column and row coordinate system.  Each tile knows its address in
  * these coordinates, as well as the (x, y) coordinates of its display triangle.
+ *
+ * A tile has a state and an optional color.  If the color is set, the tile is
+ * drawn using that fill color.  Otherwise, the fill color is the palette color
+ * corresponding to the tile's state.
  */
 class Tile {
   final int col; // The index of the column in which this tile resides.
   final int row; // The index of the row in which this tile resides.
   final PVector vertices[] = new PVector[3]; // The vertices of the tile's triangle.
-  int state; // The only mutable member.
-  color clr;
+  int state; // The tile's state, 0-3.  Determines the tile's fill color if clr is unset.
+  color clr; // An optional color.  If set, overrides state to determine the fill color.
 
   /**
    * Constructs a tile, given its (column, row) location.
@@ -250,7 +257,7 @@ class Tile {
   }
 
   /**
-   * Gets the fill color for the current state.
+   * Gets the fill color for the current state or clr.
    */
   color getFillColor() {
     return clr != null ? clr : palette.getColor(state);
@@ -274,62 +281,6 @@ class Tile {
       vertices[0].x, vertices[0].y,
       vertices[1].x, vertices[1].y,
       vertices[2].x, vertices[2].y);
-  }
-
-  /**
-   * Redraws this tile and shared borders as necessary to render a new state.
-   * (Doesn't work well because of the inability to redraw only the strokes from
-   * individual triangle sides.)
-   */
-  void redraw() {
-    draw();
-
-    if (pointsLeft()) {
-      if (state == 0 && row > 0) {
-        Tile upperNeighbor = tiles[col][row - 1];
-        stroke(upperNeighbor.getStrokeColor());
-        line(upperNeighbor.vertices[1].x, upperNeighbor.vertices[1].y,
-             upperNeighbor.vertices[2].x, upperNeighbor.vertices[2].y);
-      }
-      if (col < numCols - 1) {
-        Tile rightNeighbor = tiles[col + 1][row];
-        if (rightNeighbor.state > 0) {
-          stroke(rightNeighbor.getStrokeColor());
-          line(rightNeighbor.vertices[2].x, rightNeighbor.vertices[2].y,
-               rightNeighbor.vertices[0].x, rightNeighbor.vertices[0].y);
-        }
-      }
-      if (row < numRows) {
-        Tile lowerNeighbor = tiles[col][row + 1];
-        if (lowerNeighbor.state > 0) {
-          stroke(lowerNeighbor.getStrokeColor());
-          line(lowerNeighbor.vertices[0].x, lowerNeighbor.vertices[0].y,
-               lowerNeighbor.vertices[1].x, lowerNeighbor.vertices[1].y);
-        }
-      }
-    }
-    else {
-      if (state == 0) {
-        if (row > 0) {
-          Tile upperNeighbor = tiles[col][row - 1];
-          stroke(upperNeighbor.getStrokeColor());
-          line(upperNeighbor.vertices[2].x, upperNeighbor.vertices[2].y,
-               upperNeighbor.vertices[0].x, upperNeighbor.vertices[0].y);
-        }
-        if (col > 0) {
-          Tile leftNeighbor = tiles[col - 1][row];
-          stroke(leftNeighbor.getStrokeColor());
-          line(leftNeighbor.vertices[1].x, leftNeighbor.vertices[1].y,
-               leftNeighbor.vertices[2].x, leftNeighbor.vertices[2].y);
-        }
-      }
-      if (row < numRows) {
-        Tile lowerNeighbor = tiles[col][row + 1];
-        stroke(lowerNeighbor.getStrokeColor());
-        line(lowerNeighbor.vertices[0].x, lowerNeighbor.vertices[0].y,
-             lowerNeighbor.vertices[1].x, lowerNeighbor.vertices[1].y);
-      }
-    }
   }
 }
 
@@ -415,7 +366,7 @@ class Board {
     for (int col = 0; col < numCols; col++) {
       for (int row = 0; row < numRows; row++) {
         final Tile tile = tiles[col][row];
-        if (tile.state > 0) {
+        if (tile.state > 0 || tile.clr != null) {
           tile.draw();
         }
       }
@@ -634,6 +585,8 @@ class Board {
         final float normBrightness = invertImage ?
           (maxBrightness - brightnesses[col][row]) / normalizer :
           (brightnesses[col][row] - minBrightness) / normalizer;  // Ranges 0-1.
+        // Map pixel brightness * alpha to tile state, normalized to best fit
+        // the domain of values present onto the range of possible states.
         tile.state = (int)((palette.numColors - 1) * normBrightness);
       }
     }
