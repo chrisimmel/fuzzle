@@ -168,6 +168,7 @@ class Tile {
   final int row; // The index of the row in which this tile resides.
   final PVector vertices[] = new PVector[3]; // The vertices of the tile's triangle.
   int state; // The only mutable member.
+  color clr;
 
   /**
    * Constructs a tile, given its (column, row) location.
@@ -176,6 +177,7 @@ class Tile {
     this.col = col;
     this.row = row;
     this.state = 0;
+    this.clr = null;
 
     final float left = getLeft();
     final float right = left + TR_WIDTH;
@@ -236,6 +238,7 @@ class Tile {
    */
   void incState() {
     state = (state + 1) % palette.numColors;
+    clr = null;
   }
 
   /**
@@ -250,7 +253,7 @@ class Tile {
    * Gets the fill color for the current state.
    */
   color getFillColor() {
-    return palette.getColor(state);
+    return clr != null ? clr : palette.getColor(state);
   }
 
   /**
@@ -609,12 +612,11 @@ class Board {
       for (int row = 0; row < numRows; row++) {
         final color c = img.get(col, row);
         final float b = alpha(c) * brightness(c);
-        if (invertImage) {
-          brightnesses[numCols - (col + 1)][row] = b;
-        }
-        else {
-          brightnesses[col][row] = b;
-        }
+        final int colTarget = invertImage ? numCols - (col + 1) : col;
+
+        brightnesses[colTarget][row] = b;
+        board.tiles[colTarget][row].clr = c;
+
         if (b > maxBrightness) {
           maxBrightness = b;
         }
